@@ -85,29 +85,36 @@ i32 fsOpen(str fname) {
 i32 fsRead(i32 fd, i32 numb, void* buf) {
 
   i32 inum = bfsFdToInum(fd);                       // converts bfsFDToInum
-  i32 cursor_location = fsTell(fd);                 // gets cursor locations 
-  i32 fbnStart = cursor_location/512;               // gives us fbn (FBN 0 -> FBN 1)
-  i32 fbnEnd = (cursor_location + numb)/512;        // gives us fbn Ending location 
+  i32 cursor_location = fsTell(fd);               // gets cursor locations 
+  i32 fbnStart = cursor_location/BYTESPERBLOCK;               // gives us fbn (FBN 0 -> FBN 1)
+  i32 fbnEnd = (cursor_location + numb)/BYTESPERBLOCK;        // gives us fbn Ending location 
+
   //printf("inum: %d, cursor_location: %d, fbnStart: %d, fbnEND: %d", inum,cursor_location,fbnStart,fbnEnd);
   
+  //EOF check
+  i32 number_of_bytes_read = numb;
+  i32 fileSize = bfsGetSize(inum);
+
+  if(cursor_location + numb > fileSize){ //if cursor + numb is more then file size then set number of byte to read to be exactly till end of fileSize
+    number_of_bytes_read = fileSize - cursor_location;
+    fbnEnd = (cursor_location + number_of_bytes_read)/BYTESPERBLOCK;
+  }
+
   i8 tempbuf[2000];
   int count = 0;
 
   for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
     if(fbn == fbnEnd){
       bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
-      memcpy(buf + count, tempbuf, numb % 512); //copy the specified target data
+      memcpy(buf + count, tempbuf, numb % BYTESPERBLOCK); //copy the specified target data
     }else{
       bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
-      memcpy(buf + count, tempbuf, 512);        //read the full 512 byte block
+      memcpy(buf + count, tempbuf, BYTESPERBLOCK);        //read the full 512 byte block
     }
-    count += 512;
+    count += BYTESPERBLOCK;
   }
-
   bfsSetCursor(inum, cursor_location + numb);       // advance cursor after reading 
-
-  //FATAL(ENYI);                                    // Not Yet Implemented!
-  return numb;
+  return number_of_bytes_read;
 
 }
 
@@ -177,10 +184,11 @@ i32 fsSize(i32 fd) {
 // ============================================================================
 i32 fsWrite(i32 fd, i32 numb, void* buf) {
 
-  // ++++++++++++++++++++++++
-  // Insert your code here
-  // ++++++++++++++++++++++++
+  i32 inum = bfsFdToInum(fd);                       // converts bfsFDToInum
+  i32 cursor_location = fsTell(fd);               // gets cursor locations 
+  i32 fbnStart = cursor_location/BYTESPERBLOCK;               // gives us fbn (FBN 0 -> FBN 1)
+  i32 fbnEnd = (cursor_location + numb)/BYTESPERBLOCK;        // gives us fbn Ending location 
 
-  FATAL(ENYI);                                  // Not Yet Implemented!
+
   return 0;
 }
