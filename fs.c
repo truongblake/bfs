@@ -88,16 +88,27 @@ i32 fsRead(i32 fd, i32 numb, void* buf) {
   i32 cursor_location = fsTell(fd);                 // gets cursor locations 
   i32 fbnStart = cursor_location/512;               // gives us fbn (FBN 0 -> FBN 1)
   i32 fbnEnd = (cursor_location + numb)/512;        // gives us fbn Ending location 
-  for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
-    i32 dbn = bfsFbnToDbn(inum, fbn);               // converts fbn to dbn
-    bioRead(dbn, buf);                             // execute diskblock number 
-  }
-                                                    // memcpy - to buf from 512 bytes read
-  i32 new_cursor_location = cursor_location + numb;
-  bfsSetCursor(inum, new_cursor_location);          // advance cursour after reading 
+  //printf("inum: %d, cursor_location: %d, fbnStart: %d, fbnEND: %d", inum,cursor_location,fbnStart,fbnEnd);
+  
+  i8 tempbuf[2000];
+  int count = 0;
 
-  FATAL(ENYI);                                      // Not Yet Implemented!
-  return 0;
+  for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
+    if(fbn == fbnEnd){
+      bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
+      memcpy(buf + count, tempbuf, numb % 512); //copy the specified target data
+    }else{
+      bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
+      memcpy(buf + count, tempbuf, 512);        //read the full 512 byte block
+    }
+    count += 512;
+  }
+
+  bfsSetCursor(inum, cursor_location + numb);       // advance cursor after reading 
+
+  //FATAL(ENYI);                                    // Not Yet Implemented!
+  return numb;
+
 }
 
 

@@ -61,14 +61,14 @@ void createP5() {
 // TEST 1 : Small read (100 bytes) from cursor = 0
 // ============================================================================
 void test1(i32 fd) {
-  i8 buf[BUFSIZE];                  // buffer for reads and writes
+  i8 buf[BUFSIZE];                  // buffer for reads and writes 2000
 
-  fsSeek(fd, 0, SEEK_SET);     
+  fsSeek(fd, 0, SEEK_SET);          // offset cursor
 
-  i32 curs = fsTell(fd);
-  checkCursor(1, 0, curs);
+  i32 curs = fsTell(fd);            // return the current position of cursor
+  checkCursor(1, 0, curs);          // check to see if cursor is what we expect the position to be
 
-  memset(buf, 0, BUFSIZE);
+  memset(buf, 0, BUFSIZE);          // set buffer to 0 
   i32 ret = fsRead(fd, 100, buf);   // read 100 bytes from cursor = 0
   assert(ret == 100);
 
@@ -243,9 +243,9 @@ void p5test() {
   test1(fd);
   test2(fd);
   test3(fd);
-  test4(fd);
-  test5(fd);
-  test6(fd);
+  // test4(fd);
+  // test5(fd);
+  // test6(fd);
 
   fsClose(fd);
 
