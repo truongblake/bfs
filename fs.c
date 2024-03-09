@@ -84,11 +84,19 @@ i32 fsOpen(str fname) {
 // ============================================================================
 i32 fsRead(i32 fd, i32 numb, void* buf) {
 
-  // ++++++++++++++++++++++++
-  // Insert your code here
-  // ++++++++++++++++++++++++
+  i32 inum = bfsFdToInum(fd);                       // converts bfsFDToInum
+  i32 cursor_location = fsTell(fd);                 // gets cursor locations 
+  i32 fbnStart = cursor_location/512;               // gives us fbn (FBN 0 -> FBN 1)
+  i32 fbnEnd = (cursor_location + numb)/512;        // gives us fbn Ending location 
+  for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
+    i32 dbn = bfsFbnToDbn(inum, fbn);               // converts fbn to dbn
+    bioRead(dbn, buf);                             // execute diskblock number 
+  }
+                                                    // memcpy - to buf from 512 bytes read
+  i32 new_cursor_location = cursor_location + numb;
+  bfsSetCursor(inum, new_cursor_location);          // advance cursour after reading 
 
-  FATAL(ENYI);                                  // Not Yet Implemented!
+  FATAL(ENYI);                                      // Not Yet Implemented!
   return 0;
 }
 
