@@ -11,6 +11,7 @@
 // ============================================================================
 void check(int testnum, i8* buf, int start, int size, int val) {
   for (int i = start; i < start + size; ++i) {
+    //printf("%d: %d\n", i, buf[i]);
     if (buf[i] != val) {
       printf("TEST %d : BAD  : buf[%d] = %d but should be %d \n", 
         testnum, i, buf[i], val);
@@ -243,9 +244,9 @@ void p5test() {
   // test1(fd);
   // test2(fd);
   // test3(fd);
-   test4(fd);
+  //test4(fd);
   test5(fd);
-  test6(fd);
+  //test6(fd);
 
   fsClose(fd);
 

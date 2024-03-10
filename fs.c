@@ -100,8 +100,8 @@ i32 fsRead(i32 fd, i32 numb, void* buf) {
     fbnEnd = (cursor_location + number_of_bytes_read)/BYTESPERBLOCK;
   }
 
-  i8 tempbuf[2000];
-  int offset = 0;
+  i8 tempbuf[BYTESPERBLOCK];
+  i32 offset = 0;
 
   for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
     if(fbn == fbnEnd){
@@ -113,9 +113,8 @@ i32 fsRead(i32 fd, i32 numb, void* buf) {
     }
     offset += BYTESPERBLOCK;
   }
-  bfsSetCursor(inum, cursor_location + numb);       // advance cursor after reading 
+  fsSeek(fd, numb, SEEK_CUR);       // advance cursor after reading 
   return number_of_bytes_read;
-
 }
 
 
@@ -185,7 +184,8 @@ i32 fsSize(i32 fd) {
 i32 fsWrite(i32 fd, i32 numb, void* buf) {
 
   i32 inum = bfsFdToInum(fd);                           // converts bfsFDToInum
-  i32 cursor_location = fsTell(fd);                     // gets cursor locations 
+  i32 cursor_location = bfsTell(fd);                     // gets cursor locations 
+  i32 cursor_buffer_location = 0;                       // buffer cursor location
   i32 fbnStart = cursor_location/BYTESPERBLOCK;         // gives us fbn (FBN 0 -> FBN 1)
   i32 fbnEnd = (cursor_location + numb)/BYTESPERBLOCK;  // gives us fbn Ending location 
 
@@ -193,35 +193,31 @@ i32 fsWrite(i32 fd, i32 numb, void* buf) {
   i32 fileSize = fsSize(fd);
   if(cursor_location + numb > fileSize){
     bfsExtend(inum, fbnEnd);
+    bfsSetSize(inum, cursor_location + numb);
   }
 
   //temporary buf to store writing
-  i32 totalBlock = fbnEnd;
-  i32 tempbuf[fbnEnd*BYTESPERBLOCK];
+  i8 tempbuf[BYTESPERBLOCK];
   i32 offset = cursor_location;
 
-  for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){
-    if(fbn == fbnEnd){
-      bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
-      memcpy(buf + offset, tempbuf, numb % BYTESPERBLOCK); //copy the specified target data
-    }else{
-      bfsRead(inum,fbn,tempbuf);                //reads all dbn associated with file
-      memcpy(buf + offset, tempbuf, BYTESPERBLOCK);        //read the full 512 byte block
-    }
-    offset += BYTESPERBLOCK;
-  }
-
-  offset = cursor_location;
-
-  //writing to the dbn
-  for(int fbn = fbnStart; fbn < fbnEnd; fbn++){
+  for(int fbn = fbnStart; fbn <= fbnEnd; fbn++){ //cycles through FBN
     i32 dbn = bfsFbnToDbn(inum, fbn);
-    bioWrite(dbn, tempbuf);
-    offset += BYTESPERBLOCK;
+    bfsRead(inum, fbn, tempbuf);
+    if(numb - cursor_buffer_location < BYTESPERBLOCK){
+      memcpy(tempbuf + cursor_location % BYTESPERBLOCK, buf + cursor_buffer_location, numb - cursor_buffer_location);
+      bioWrite(dbn, tempbuf);
+      cursor_location += numb-cursor_buffer_location;
+      cursor_buffer_location += numb-cursor_buffer_location;
+    }else{
+      memcpy(tempbuf + cursor_location % BYTESPERBLOCK, buf + cursor_buffer_location, BYTESPERBLOCK - cursor_location % BYTESPERBLOCK);
+      bioWrite(dbn, tempbuf);
+      cursor_location += BYTESPERBLOCK - cursor_location % BYTESPERBLOCK;
+      cursor_buffer_location += BYTESPERBLOCK - cursor_location % BYTESPERBLOCK;
+    }
+    
   }
-
   //advance cursor
-  bfsSetCursor(inum, cursor_location + numb); 
+  fsSeek(fd, numb, SEEK_CUR);
 
   return 0;
 }
